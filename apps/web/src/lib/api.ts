@@ -75,6 +75,7 @@ export interface TraceEvent {
   total_steps: number | null
   total_llm_calls: number | null
   total_tool_calls: number | null
+  metadata: Record<string, unknown> | null
 }
 
 export interface TraceDetail {
@@ -145,4 +146,7 @@ export const api = {
 
   trace: (id: string) =>
     get<TraceDetail>(`/api/traces/${id}`),
+
+  agents: () =>
+    get<{ name: string; trace_count: number }[]>('/api/traces/agents'),
 }

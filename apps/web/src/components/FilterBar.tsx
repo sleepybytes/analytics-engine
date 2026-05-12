@@ -46,13 +46,6 @@ export default function FilterBar({ range, agentName, onRange, onAgent }: Props)
         ))}
       </div>
 
-      <input
-        type="text"
-        placeholder="Filter by agent…"
-        value={agentName}
-        onChange={e => onAgent(e.target.value)}
-        className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
     </div>
   )
 }

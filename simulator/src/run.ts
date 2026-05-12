@@ -16,8 +16,8 @@ const CONFIGS = {
   },
   bench: {
     traces:      10_000,
-    batchSize:   500,
-    concurrency: 10,
+    batchSize:   200,
+    concurrency: 3,
   },
 }
 

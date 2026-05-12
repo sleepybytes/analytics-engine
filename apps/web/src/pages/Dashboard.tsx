@@ -4,7 +4,7 @@ import KpiCard from '../components/KpiCard'
 import VolumeChart from '../components/charts/VolumeChart'
 import LatencyChart from '../components/charts/LatencyChart'
 import BarChart from '../components/charts/BarChart'
-import { useKpi, useQuery } from '../hooks/useAnalytics'
+import { useKpi, useQuery, useAgents } from '../hooks/useAnalytics'
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -25,6 +25,7 @@ export default function Dashboard() {
     [range, agentName],
   )
 
+  const { data: agents }                     = useAgents()
   const { data: kpi, isLoading: kpiLoading } = useKpi(filters)
   const { data: volume }   = useQuery('trace_volume', filters)
   const { data: latency }  = useQuery('avg_llm_latency_by_model', filters)
@@ -41,7 +42,19 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-900">Overview</h2>
-        <FilterBar range={range} agentName={agentName} onRange={setRange} onAgent={setAgentName} />
+        <div className="flex items-center gap-3">
+          <FilterBar range={range} agentName={agentName} onRange={setRange} onAgent={setAgentName} />
+          <select
+            value={agentName}
+            onChange={e => setAgentName(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All agents</option>
+            {(agents ?? []).map(a => (
+              <option key={a.name} value={a.name}>{a.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* KPI row */}

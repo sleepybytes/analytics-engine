@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ..db.duckdb import writer
+from ..db.duckdb import DuckDBManager, writer
 from ..queries.traces import get_trace, list_traces
 
 router = APIRouter(prefix="/api/traces", tags=["traces"])
@@ -35,6 +35,24 @@ def get_traces(
     if not start_time or not end_time:
         start_time, end_time = _default_times()
     return list_traces(project_id, start_time, end_time, agent_name, status, limit, offset)
+
+
+@router.get("/agents")
+def get_agents(api_key: str = Query(...)):
+    """Return distinct agent names for the project, ordered by trace count."""
+    project_id = _resolve_project(api_key)
+    cur = DuckDBManager.cursor()
+    cur.execute(
+        """
+        SELECT agent_name, COUNT(*) AS trace_count
+        FROM events
+        WHERE project_id = ? AND event_type = 'trace_started' AND agent_name IS NOT NULL
+        GROUP BY agent_name
+        ORDER BY trace_count DESC
+        """,
+        [project_id],
+    )
+    return [{"name": row[0], "trace_count": row[1]} for row in cur.fetchall()]
 
 
 @router.get("/{trace_id}")

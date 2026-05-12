@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import FilterBar, { Range, rangeToTimes } from '../components/FilterBar'
 import TraceDetail from '../components/TraceDetail'
-import { useTraces } from '../hooks/useAnalytics'
+import { useTraces, useAgents } from '../hooks/useAnalytics'
 import { TraceItem } from '../lib/api'
 
 const STATUS_CLASS: Record<string, string> = {
@@ -27,6 +27,7 @@ export default function TraceExplorer() {
   )
 
   const { data, isLoading } = useTraces(filters, PAGE_SIZE, offset)
+  const { data: agents }   = useAgents()
 
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
   const page = Math.floor(offset / PAGE_SIZE) + 1
@@ -37,6 +38,20 @@ export default function TraceExplorer() {
         <h2 className="text-xl font-semibold text-gray-900">Traces</h2>
         <div className="flex flex-wrap gap-3">
           <FilterBar range={range} agentName={agentName} onRange={r => { setRange(r); setOffset(0) }} onAgent={a => { setAgentName(a); setOffset(0) }} />
+
+          {/* Agent dropdown */}
+          <select
+            value={agentName}
+            onChange={e => { setAgentName(e.target.value); setOffset(0) }}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All agents</option>
+            {(agents ?? []).map(a => (
+              <option key={a.name} value={a.name}>{a.name}</option>
+            ))}
+          </select>
+
+          {/* Status dropdown */}
           <select
             value={status}
             onChange={e => { setStatus(e.target.value); setOffset(0) }}

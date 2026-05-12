@@ -26,3 +26,7 @@ export function useTraces(filters: Filters, limit: number, offset: number) {
 export function useTrace(traceId: string | null) {
   return useSWR(traceId ? ['trace', traceId] : null, () => api.trace(traceId!))
 }
+
+export function useAgents() {
+  return useSWR('agents', () => api.agents(), { refreshInterval: FIVE_MIN })
+}

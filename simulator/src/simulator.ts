@@ -91,6 +91,10 @@ export async function runSimulator(cfg: SimulatorConfig): Promise<void> {
   let sent = 0
   let errors = 0
 
+  // Events per concurrent round — if > 3 000 (30% of queue), pause to let the drain loop catch up
+  const eventsPerRound = cfg.concurrency * cfg.batchSize
+  const drainPauseMs  = eventsPerRound > 3_000 ? 150 : 0
+
   for (let i = 0; i < batches.length; i += cfg.concurrency) {
     const chunk = batches.slice(i, i + cfg.concurrency)
     await Promise.all(
@@ -103,6 +107,8 @@ export async function runSimulator(cfg: SimulatorConfig): Promise<void> {
           })
       )
     )
+
+    if (drainPauseMs) await sleep(drainPauseMs)
 
     const pct      = Math.round(((i + chunk.length) / batches.length) * 100)
     const elapsed  = Date.now() - start
