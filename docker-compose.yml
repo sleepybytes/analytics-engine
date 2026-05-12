@@ -1,0 +1,39 @@
+name: ae
+
+services:
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "8080:8000"
+    volumes:
+      - db_data:/data
+      - ./apps/api:/app
+    environment:
+      - DB_PATH=/data/analytics.duckdb
+      - PROJECT_API_KEY=dev_project_key
+      - PROJECT_ID=proj_dev_001
+      - LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  db_data:
+    driver: local

@@ -1,0 +1,39 @@
+# Private docs
+plan.md
+TASK.md
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+dist/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.npm
+
+# DuckDB data files
+*.duckdb
+*.duckdb.wal
+data/
+
+# Docker volumes (local bind-mounts)
+apps/api/.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
