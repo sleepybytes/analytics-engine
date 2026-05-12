@@ -105,6 +105,8 @@ async def ingest(payload: CapturePayload) -> dict:
     try:
         writer.enqueue_nowait(rows)
     except asyncio.QueueFull:
+        from .alert import ingest_error
+        ingest_error("queue_full", f"Dropped batch of {len(rows)} events — queue at capacity", len(rows))
         raise HTTPException(status_code=429, detail="Write queue full, retry later")
 
     trace_ids = list({r["trace_id"] for r in rows})

@@ -7,6 +7,14 @@ import duckdb
 
 logger = logging.getLogger(__name__)
 
+# imported lazily to avoid circular import at module load time
+def _alert_ingest_error(error_type: str, detail: str, batch_size: int | None = None) -> None:
+    try:
+        from ..services.alert import ingest_error
+        ingest_error(error_type, detail, batch_size)
+    except Exception:
+        logger.exception("Failed to fire ingest error alert")
+
 COLUMNS = [
     "event_id", "trace_id", "project_id", "timestamp", "event_type", "run_id",
     "agent_name", "user_id", "session_id", "trace_status", "trace_duration_ms",
@@ -153,6 +161,12 @@ class DuckDBWriter:
                 if buffer:
                     await self._flush_buffer(buffer)
                 raise
+            except Exception as exc:
+                # DB write failed — alert and keep the loop alive.
+                # The buffer is discarded to prevent an infinite retry loop
+                # on a corrupt batch; individual events are not re-queued.
+                _alert_ingest_error("db_write_failed", str(exc), len(buffer))
+                buffer.clear()
 
     async def _flush_buffer(self, buffer: list[dict]) -> None:
         rows = [tuple(e.get(col) for col in COLUMNS) for e in buffer]

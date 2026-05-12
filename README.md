@@ -172,13 +172,33 @@ All query endpoints require `?api_key=<your_key>`.
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/analytics/kpi` | KPI summary — count, success rate, latency, cost |
-| `GET` | `/api/analytics/queries` | List all 8 named queries with chart_type metadata |
+| `GET` | `/api/analytics/queries` | List all named queries with chart_type metadata |
 | `GET` | `/api/analytics/{query_id}` | Run a named query with optional filters |
 | `GET` | `/api/analytics/nl?q=...` | Natural-language → query routing |
+| `GET` | `/api/analytics/nl/misses` | Unmatched NL queries log (most recent first) |
 
 **Named queries:** `trace_volume` · `avg_llm_latency_by_model` · `tool_error_rate` · `token_usage_by_agent` · `cost_per_run_by_model` · `top_slow_traces` · `avg_steps_by_outcome` · `model_usage_distribution`
 
 **Common query params:** `start_time`, `end_time`, `agent_name`, `model`
+
+### NL query examples
+
+The `/api/analytics/nl` endpoint understands plain English. Entity extraction is automatic — time windows, agent names, and model names are parsed from the query string.
+
+```bash
+# Intent only
+curl "$BASE/api/analytics/nl?api_key=$API_KEY&q=show+me+the+slowest+traces"
+curl "$BASE/api/analytics/nl?api_key=$API_KEY&q=cost+by+model"
+curl "$BASE/api/analytics/nl?api_key=$API_KEY&q=which+tools+are+failing"
+
+# With extracted entities (no need to pass separate params)
+curl "$BASE/api/analytics/nl?api_key=$API_KEY&q=code-agent+logs+in+last+1+hour"
+curl "$BASE/api/analytics/nl?api_key=$API_KEY&q=gpt-4o+latency+last+7d"
+curl "$BASE/api/analytics/nl?api_key=$API_KEY&q=errors+of+qa+agent+today"
+curl "$BASE/api/analytics/nl?api_key=$API_KEY&q=how+is+claude-3-opus+performing+this+week"
+```
+
+Every unmatched query is logged to `nl_miss_log` and optionally POSTed to a webhook (see [Configuration](#configuration)).
 
 ### Traces
 
@@ -267,6 +287,52 @@ The ingestion layer promotes well-known `metadata` keys to dedicated DB columns:
 **camelCase SDK → snake_case DB.** The SDK emits camelCase (`eventId`, `traceId`, `latencyMs`). The FastAPI layer accepts either form via Pydantic `Field(alias=...)` and maps to the DB's snake_case columns in `ingestion.py`.
 
 **NL query routing.** Simple keyword regex rules in `nl_query.py` — no LLM needed. "show slow traces" → `top_slow_traces`, "cost by model" → `cost_per_run_by_model`, etc.
+
+---
+
+## Configuration
+
+Copy `.env.example` to `.env` and adjust values. All variables are optional except the credentials.
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Default | Description |
+|---|---|---|
+| `DB_PATH` | `/data/analytics.duckdb` | DuckDB file path (inside the container volume) |
+| `LOG_LEVEL` | `info` | `debug` / `info` / `warning` / `error` |
+| `PROJECT_API_KEY` | `dev_project_key` | API key for the default project |
+| `PROJECT_ID` | `proj_dev_001` | Project ID for the default project |
+| `ALERT_WEBHOOK_URL` | _(unset)_ | Webhook URL for NL query miss alerts |
+| `VITE_API_KEY` | `dev_project_key` | API key baked into the frontend bundle |
+
+### NL query miss alerts
+
+When a natural-language query does not match any known metric, the API:
+
+1. Logs the query to the `nl_miss_log` table (always).
+2. POSTs to `ALERT_WEBHOOK_URL` if set (fire-and-forget, does not block the response).
+
+The webhook payload is:
+
+```json
+{
+  "event":      "nl_query_miss",
+  "query":      "what is the weather",
+  "project_id": "proj_dev_001",
+  "ts":         "2026-05-12T12:56:18Z",
+  "detail":     "No rule matched 'what is the weather'"
+}
+```
+
+Works out of the box with **Slack incoming webhooks**, **Discord webhooks**, **PagerDuty Events API v2**, and any endpoint that accepts `POST application/json`.
+
+Browse all logged misses via:
+
+```bash
+curl "$BASE/api/analytics/nl/misses?api_key=$API_KEY"
+```
 
 ---
 

@@ -191,6 +191,8 @@ _AGENT_STOP = {
     "last", "this", "that", "today", "yesterday", "hour", "day", "week",
     "make", "made", "did", "do", "have", "had", "has", "use", "used",
     "what", "which", "how", "when", "where", "who", "why",
+    "slow", "slowest", "fastest", "longest", "shortest", "worst", "best",
+    "top", "recent", "latest", "show", "me", "give", "find", "get",
 }
 
 _AGENT_PATTERNS: list[re.Pattern] = [
