@@ -2,6 +2,12 @@
 
 PostHog for LLM agent runs. Every LLM call, tool use, retry, and error your agent makes is captured as a structured event, stored in a columnar analytics store, and surfaced through a dashboard with natural-language query support.
 
+![Dashboard — KPI cards, trace volume, model distribution, latency and tool error charts](assets/1.png)
+
+![Trace Explorer — paginated trace list with per-step event detail panel](assets/2.png)
+
+![Analytics — natural language query with matched query ID and result table](assets/3.png)
+
 ---
 
 ## Quick Start
