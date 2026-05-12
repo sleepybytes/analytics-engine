@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 from ..db.duckdb import writer
 from ..queries.analytics import kpi_summary, run_named_query
 from ..queries.registry import QUERY_REGISTRY
-from ..services.nl_query import resolve
+from ..services.nl_query import SUPPORTED_EXAMPLES, resolve
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
@@ -54,11 +54,26 @@ def natural_language_query(
     model:      str | None = Query(None),
 ):
     project_id = _resolve_project(api_key)
-    query_id = resolve(q)
-    if not start_time or not end_time:
-        start_time, end_time = _default_times()
-    result = run_named_query(query_id, project_id, start_time, end_time, agent_name, model)
-    result["nl_query"] = q
+    nl = resolve(q)
+    if nl is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not match '{q}' to a known metric. Try: {', '.join(SUPPORTED_EXAMPLES)}",
+        )
+    # NL-extracted params take precedence; explicit query params are fallback
+    effective_agent = nl.agent_name or agent_name
+    effective_model = nl.model      or model
+    effective_start = nl.start_time or start_time
+    effective_end   = nl.end_time   or end_time
+    if not effective_start or not effective_end:
+        effective_start, effective_end = _default_times()
+    result = run_named_query(
+        nl.query_id, project_id,
+        effective_start, effective_end,
+        effective_agent, effective_model,
+    )
+    result["nl_query"]  = q
+    result["extracted"] = nl.extracted
     return result
 
 

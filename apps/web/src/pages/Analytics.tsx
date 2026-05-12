@@ -93,7 +93,7 @@ export default function Analytics() {
                 Query: <span className="text-blue-600">{result.nl_query}</span>
               </p>
               <p className="text-xs text-gray-400 mt-0.5">
-                Matched → <code className="font-mono">{result.query_id}</code> · {result.row_count} rows
+                Matched → <code className="font-mono">{result.query_id}</code> · {result.row_count} rows · {result.query_time_ms}ms
               </p>
             </div>
             <span className="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded">{result.chart_type}</span>

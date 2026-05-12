@@ -27,6 +27,7 @@ export interface QueryResult {
   start_time: string
   end_time: string
   row_count: number
+  query_time_ms: number
   data: Record<string, unknown>[]
   nl_query?: string
 }
